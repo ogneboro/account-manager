@@ -1,18 +1,28 @@
+package ru.sps38.accountmanager.service;
+
 import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TelegramBot {
+
     private static final String botToken = "5373512098:AAHBW_qae9Sp4RQR9EsVi5M88mEFZtOIaXc";
     private static final String chatPortal = "1045472645";
     private static final String chatChiin = "1045472645";
     private static final String chatIT = "-608647614";
 
+    private static class SingletonHolder {
+        public static final TelegramBot instance = new TelegramBot();
+    }
+
+    public static TelegramBot getInstance() {
+        return TelegramBot.SingletonHolder.instance;
+    }
+
     //898478727 Vlad
-    public static Date sendCreationResult(String[] param, String[] email, String[] ad, String cStatus, String portalStatus, String cZUPStatus){
+    public Date sendCreationResult(String[] param, String[] email, String[] ad, String cStatus, String portalStatus, String cZUPStatus) {
         String status = "";
-        try{
+        try {
             String message = "Созданы учетные записи для сотрудника: " + param[2]
                     + "%0AДолжность: " + param[3]
                     + "%0AПочта: " + email[0] + " " + email[1]
@@ -24,24 +34,27 @@ public class TelegramBot {
             String query = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatIT + "&text=" + message;
             conn(query);
             status = "Сообщение отправлено";
-        }catch (Exception e){
+        } catch (Exception e) {
             status = "Не удалось отправить сообщение";
         }
         System.out.println(status);
         Date date = new Date(System.currentTimeMillis());
         return date;
     }
-    public static void connDBErr(){
+
+    public void connDBErr() {
         String message = "Не%20удалось%20подключиться%20к%20БД";
         String query = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatIT + "&text=" + message;
         conn(query);
     }
-    public static void requestDBErr(){
+
+    public void requestDBErr() {
         String message = "Не%20удалось%20обработать%20запрос%20к%20БД";
         String query = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatIT + "&text=" + message;
         conn(query);
     }
-    public static void requestAccept(String[] param){
+
+    public void requestAccept(String[] param) {
         String message = "Запрос%20принят:%20";
         for (int i = 0; i < param.length; i++) {
             message = message + param[i] + "/";
@@ -49,7 +62,8 @@ public class TelegramBot {
         String query = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatIT + "&text=" + message;
         conn(query);
     }
-    public static void badRequest(String[] param){
+
+    public void badRequest(String[] param) {
         String message = "Bad%20request:%20";
         for (int i = 0; i < param.length; i++) {
             message = message + param[i] + "/";
@@ -57,16 +71,17 @@ public class TelegramBot {
         String query = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatIT + "&text=" + message;
         conn(query);
     }
-    public static String sendMsgPortal(String fio, String position){
+
+    public String sendMsgPortal(String fio, String position) {
         //отправить сообщение Константину
         String status = "";
-        try{
+        try {
             //https://api.telegram.org/bot5373512098:AAHBW_qae9Sp4RQR9EsVi5M88mEFZtOIaXc/sendMessage?chat_id=1045472645&text=Привет%20мир
             String message = "Прошу%20создать%20учетную%20запись%20портал%20сотруднику:%20" + fio + "%0AДолжность:%20" + position;
             String query = "https://api.telegram.org/bot" + botToken + "/sendMessage?chat_id=" + chatPortal + "&text=" + message;
             conn(query);
             status = "Сообщение отправлено";
-        }catch (Exception e){
+        } catch (Exception e) {
             status = "Не удалось отправить сообщение";
         }
         return status;
@@ -108,10 +123,10 @@ public class TelegramBot {
     }
      */
 
-    private static void conn(String query){
+    private void conn(String query) {
         HttpsURLConnection connection = null;
         String otvet = "";
-        try{
+        try {
             connection = (HttpsURLConnection) new URL(query).openConnection();
 
             connection.setRequestMethod("GET");
@@ -121,7 +136,7 @@ public class TelegramBot {
 
             connection.connect();
             StringBuilder sb = new StringBuilder();
-            if (HttpsURLConnection.HTTP_OK == connection.getResponseCode()){
+            if (HttpsURLConnection.HTTP_OK == connection.getResponseCode()) {
                 /*
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
@@ -135,15 +150,13 @@ public class TelegramBot {
                 //System.out.println(sb.toString());
 
                  */
-            }
-            else{
+            } else {
                 System.out.println("fail:" + connection.getResponseCode() + ", " + connection.getResponseMessage());
             }
-        }
-        catch (Throwable cause){
+        } catch (Throwable cause) {
             cause.printStackTrace();
         }
-        if(connection != null){
+        if (connection != null) {
             connection.disconnect();
         }
     }

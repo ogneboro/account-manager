@@ -1,3 +1,5 @@
+package ru.sps38.accountmanager.service;
+
 public class Email {
     public static String[] createEmail(String fio, String position, String location){
         String login = "213"; //транслитом сделать фамилию и инициалы

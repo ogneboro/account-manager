@@ -1,16 +1,39 @@
+package ru.sps38.accountmanager.service;
+
+import ru.sps38.accountmanager.db.PostgresAccess;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import static ru.sps38.accountmanager.utils.Constants.acc;
+
 public class AccountCreation {
-    private static final String[]acc = new String[]{"почта", "ad", "portal", "1cUAT", "1cBUH", "1cZUP", "1cDOC"};
-    public static void accCreation(String[] param){
+
+    private static class SingletonHolder {
+        public static final AccountCreation instance = new AccountCreation();
+    }
+
+    public static AccountCreation getInstance() {
+        return AccountCreation.SingletonHolder.instance;
+    }
+
+    private final TelegramBot telegramBot;
+    private final PostgresAccess db;
+
+
+    public AccountCreation() {
+        this.db = PostgresAccess.getInstance();
+        this.telegramBot = TelegramBot.getInstance();
+    }
+
+    public void accCreation(String[] param) {
         //"http://localhost:8000/newEmployee/Кудякова/Красняк Андрей Борисович/Диспетчер/вахта/89041450037";
 
-        if(requestCheck(param).equals("bad request")){
+        if (requestCheck(param).equals("bad request")) {
             //если запрос неверный send telegram msg "bad request"
-            TelegramBot.badRequest(param);
+            telegramBot.badRequest(param);
         } else {
-            TelegramBot.requestAccept(param);
+            telegramBot.requestAccept(param);
             String creator = param[1];
             String fio = param[2];
             String post = param[3];
@@ -19,12 +42,12 @@ public class AccountCreation {
             try {
                 param[5].length();
                 number = param[5];
-            } catch (Exception e){
+            } catch (Exception e) {
                 number = "";
             }
 
             //Проверяем существует ли такой работник
-            String empExCheck = Request.sendReqEmpExists(fio);
+            String empExCheck = db.sendReqEmpExists(fio);
             System.out.println("Существование сотрудника: " + empExCheck);
 
             //Запрашиваем какие учетные записи нужны для данной должности
@@ -56,7 +79,7 @@ public class AccountCreation {
                 }
             } else {
                 //Создать сотрудника
-                Request.createEmployee(param, number);
+                db.createEmployee(param, number);
                 //Создать запись задачи
                 for (int i = 0; i < acc.length; i++) {
                     accToCreate[i] = accNeed[i];
@@ -87,52 +110,53 @@ public class AccountCreation {
             }
             //sending msgPortal
             if (accToCreate[2].equals(acc[2])) {
-                portalStatus = TelegramBot.sendMsgPortal(param[2], param[3]);
+                portalStatus = telegramBot.sendMsgPortal(param[2], param[3]);
                 System.out.println(portalStatus);
             }
             if (accToCreate[3].equals(acc[3]) || accToCreate[4].equals(acc[4]) || accToCreate[6].equals(acc[6])) {
-                //cStatus = TelegramBot.sendMsgC(param[2], param[3], accToCreate[3], accToCreate[4], accToCreate[6], email[0]);
+                //cStatus = java.java.server.TelegramBot.sendMsgC(param[2], param[3], accToCreate[3], accToCreate[4], accToCreate[6], email[0]);
                 System.out.println(cStatus);
             }
-            Date date = TelegramBot.sendCreationResult(param, email, ad, cStatus, portalStatus, cZUPStatus);
+            Date date = telegramBot.sendCreationResult(param, email, ad, cStatus, portalStatus, cZUPStatus);
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
             System.out.println(formatter.format(date));
             //      Куда отправлять????
             //     if (accToCreate[5].equals(acc[5])){
-            //         cZUPStatus = TelegramBot.sendMsgCZup(param[2], param[3]);
+            //         cZUPStatus = java.java.server.TelegramBot.sendMsgCZup(param[2], param[3]);
             //     }
             //
-            //         //После создания и отправки отправить данные от почты и AD в it отдел
+            //         //После создания и отправки отправить данные от почты и java.java.server.AD в it отдел
             //         остальные отправить на почту внести данные в БД об аккаунте и заявке
             //         //?
             //     Date date = new Date();
-            //     Request.updateStatusRequestToDB(param[2],param[0],date.toString(),email[0],ad[0],cStatus,portalStatus,cZUPStatus);
+            //     java.java.server.Request.updateStatusRequestToDB(param[2],param[0],date.toString(),email[0],ad[0],cStatus,portalStatus,cZUPStatus);
             //  }
             //  else {
 
         }
     }
-    public static String requestCheck(String[] commands){
+
+    public String requestCheck(String[] commands) {
         //проверяем, что все необходимые поля заполнены
         for (int i = 1; i < 4; i++) {
-            if (commands[i].length() == 0){
+            if (commands[i].length() == 0) {
                 return "bad request";
             }
         }
         return "ok";
     }
 
-    public static String[] accDistribution(String post, String location){
+    public String[] accDistribution(String post, String location) {
         //request by post which account are needed and send on "acc" type in accNeed
         String[] accNeed = new String[acc.length];
         String request = "SELECT email, ad, portal, one_c_uat, one_c_buh, one_c_zup, one_c_doc FROM public.\"postsAD\" where name = '" + post + "'";
 
         //Смотрим какие аккаунты необходимы
-        accNeed = Request.sendReqADPosts(request, accNeed);
+        accNeed = db.sendReqADPosts(request, accNeed);
         for (int i = 0; i < accNeed.length; i++) {
-            if (accNeed[i].equals("t")){
+            if (accNeed[i].equals("t")) {
                 accNeed[i] = acc[i];
-            } else{
+            } else {
                 accNeed[i] = "";
             }
             System.out.println(accNeed[i]);
@@ -140,13 +164,13 @@ public class AccountCreation {
         return accNeed;
     }
 
-    public static String[] accCheck(String[] param){
+    public String[] accCheck(String[] param) {
         String[] accExists = new String[acc.length];
         //checking needed accounts in db, if exists send name of acc to alreadyCreated as in "acc"
 
         String request = "SELECT email, ad, portal, one_c_uat, one_c_buh, one_c_zup, one_c_doc FROM public.employees WHERE name = " + "'" + param[2] + "'";
         System.out.println(request);
-        accExists = Request.sendReqExists(request, accExists);
+        accExists = db.sendReqExists(request, accExists);
         for (int i = 0; i < acc.length; i++) {
             System.out.println(accExists[i] + " Существующий аккаунт");
         }
